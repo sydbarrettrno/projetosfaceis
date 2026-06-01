@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ArrowLeft, FileText, RotateCcw, ClipboardList } from "lucide-react";
-import { getChecklist, type ItemStatus } from "@/data/checklists";
+import { getChecklist, type ItemStatus, type ChecklistSection, type ChecklistItem } from "@/data/checklists";
 import { SiteHeader } from "@/components/SiteHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { useChecklistState, useHydrate } from "@/lib/checklist-state";
@@ -48,8 +48,8 @@ function ChecklistDetail() {
     let checked = 0;
     let pending = 0;
     let na = 0;
-    checklist.sections.forEach((s) =>
-      s.items.forEach((it) => {
+    checklist.sections.forEach((s: ChecklistSection) =>
+      s.items.forEach((it: ChecklistItem) => {
         total++;
         const st = items[it.id]?.status ?? "unchecked";
         if (st === "checked") checked++;
@@ -136,7 +136,7 @@ function ChecklistDetail() {
 
       {/* Sections */}
       <main className="mx-auto mt-6 max-w-5xl space-y-6 px-4 sm:px-6">
-        {checklist.sections.map((section, idx) => (
+        {checklist.sections.map((section: ChecklistSection, idx: number) => (
           <section
             key={section.id}
             className="overflow-hidden rounded-xl border border-border bg-card shadow-sm"
@@ -151,7 +151,7 @@ function ChecklistDetail() {
               )}
             </div>
             <ul className="divide-y divide-border">
-              {section.items.map((item) => {
+              {section.items.map((item: ChecklistItem) => {
                 const state = items[item.id] ?? { status: "unchecked" as ItemStatus, observation: "" };
                 return (
                   <li key={item.id} className="px-5 py-4">

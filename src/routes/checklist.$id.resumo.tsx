@@ -1,7 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ArrowLeft, FileBarChart2, ClipboardCheck, Info } from "lucide-react";
 import { useMemo } from "react";
-import { getChecklist } from "@/data/checklists";
+import { getChecklist, type ChecklistSection, type ChecklistItem } from "@/data/checklists";
 import { SiteHeader } from "@/components/SiteHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { useChecklistState, useHydrate } from "@/lib/checklist-state";
@@ -34,8 +34,8 @@ function SummaryPage() {
       pending = 0,
       na = 0;
     const byStatus = { checked: [] as any[], pending: [] as any[], na: [] as any[], unchecked: [] as any[] };
-    checklist.sections.forEach((s) =>
-      s.items.forEach((it) => {
+    checklist.sections.forEach((s: ChecklistSection) =>
+      s.items.forEach((it: ChecklistItem) => {
         total++;
         const state = items[it.id] ?? { status: "unchecked", observation: "" };
         const row = { section: s.title, item: it, observation: state.observation };
