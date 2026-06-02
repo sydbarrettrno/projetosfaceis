@@ -9,57 +9,64 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as PreparacaoRouteImport } from './routes/preparacao'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ChecklistIdRouteImport } from './routes/checklist.$id'
-import { Route as ChecklistIdResumoRouteImport } from './routes/checklist.$id.resumo'
+import { Route as PreparacaoResultadoRouteImport } from './routes/preparacao.resultado'
 
+const PreparacaoRoute = PreparacaoRouteImport.update({
+  id: '/preparacao',
+  path: '/preparacao',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ChecklistIdRoute = ChecklistIdRouteImport.update({
-  id: '/checklist/$id',
-  path: '/checklist/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ChecklistIdResumoRoute = ChecklistIdResumoRouteImport.update({
-  id: '/resumo',
-  path: '/resumo',
-  getParentRoute: () => ChecklistIdRoute,
+const PreparacaoResultadoRoute = PreparacaoResultadoRouteImport.update({
+  id: '/resultado',
+  path: '/resultado',
+  getParentRoute: () => PreparacaoRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/checklist/$id': typeof ChecklistIdRouteWithChildren
-  '/checklist/$id/resumo': typeof ChecklistIdResumoRoute
+  '/preparacao': typeof PreparacaoRouteWithChildren
+  '/preparacao/resultado': typeof PreparacaoResultadoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/checklist/$id': typeof ChecklistIdRouteWithChildren
-  '/checklist/$id/resumo': typeof ChecklistIdResumoRoute
+  '/preparacao': typeof PreparacaoRouteWithChildren
+  '/preparacao/resultado': typeof PreparacaoResultadoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/checklist/$id': typeof ChecklistIdRouteWithChildren
-  '/checklist/$id/resumo': typeof ChecklistIdResumoRoute
+  '/preparacao': typeof PreparacaoRouteWithChildren
+  '/preparacao/resultado': typeof PreparacaoResultadoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/checklist/$id' | '/checklist/$id/resumo'
+  fullPaths: '/' | '/preparacao' | '/preparacao/resultado'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/checklist/$id' | '/checklist/$id/resumo'
-  id: '__root__' | '/' | '/checklist/$id' | '/checklist/$id/resumo'
+  to: '/' | '/preparacao' | '/preparacao/resultado'
+  id: '__root__' | '/' | '/preparacao' | '/preparacao/resultado'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  ChecklistIdRoute: typeof ChecklistIdRouteWithChildren
+  PreparacaoRoute: typeof PreparacaoRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/preparacao': {
+      id: '/preparacao'
+      path: '/preparacao'
+      fullPath: '/preparacao'
+      preLoaderRoute: typeof PreparacaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -67,38 +74,31 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/checklist/$id': {
-      id: '/checklist/$id'
-      path: '/checklist/$id'
-      fullPath: '/checklist/$id'
-      preLoaderRoute: typeof ChecklistIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/checklist/$id/resumo': {
-      id: '/checklist/$id/resumo'
-      path: '/resumo'
-      fullPath: '/checklist/$id/resumo'
-      preLoaderRoute: typeof ChecklistIdResumoRouteImport
-      parentRoute: typeof ChecklistIdRoute
+    '/preparacao/resultado': {
+      id: '/preparacao/resultado'
+      path: '/resultado'
+      fullPath: '/preparacao/resultado'
+      preLoaderRoute: typeof PreparacaoResultadoRouteImport
+      parentRoute: typeof PreparacaoRoute
     }
   }
 }
 
-interface ChecklistIdRouteChildren {
-  ChecklistIdResumoRoute: typeof ChecklistIdResumoRoute
+interface PreparacaoRouteChildren {
+  PreparacaoResultadoRoute: typeof PreparacaoResultadoRoute
 }
 
-const ChecklistIdRouteChildren: ChecklistIdRouteChildren = {
-  ChecklistIdResumoRoute: ChecklistIdResumoRoute,
+const PreparacaoRouteChildren: PreparacaoRouteChildren = {
+  PreparacaoResultadoRoute: PreparacaoResultadoRoute,
 }
 
-const ChecklistIdRouteWithChildren = ChecklistIdRoute._addFileChildren(
-  ChecklistIdRouteChildren,
+const PreparacaoRouteWithChildren = PreparacaoRoute._addFileChildren(
+  PreparacaoRouteChildren,
 )
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  ChecklistIdRoute: ChecklistIdRouteWithChildren,
+  PreparacaoRoute: PreparacaoRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
