@@ -1,12 +1,12 @@
-import type { ItemStatus } from "@/data/checklists";
+import type { ItemStatus } from "@/data/trilha";
 import { Check, Clock, MinusCircle, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const config: Record<ItemStatus, { label: string; icon: typeof Check; cls: string }> = {
   checked: { label: "Conferido", icon: Check, cls: "bg-success/15 text-success border-success/30" },
   pending: { label: "Pendente", icon: Clock, cls: "bg-warning/20 text-warning-foreground border-warning/40" },
-  not_applicable: { label: "N/A", icon: MinusCircle, cls: "bg-muted text-muted-foreground border-border" },
-  unchecked: { label: "Não conferido", icon: Circle, cls: "bg-background text-muted-foreground border-border" },
+  not_applicable: { label: "Não se aplica", icon: MinusCircle, cls: "bg-muted text-muted-foreground border-border" },
+  not_started: { label: "Não iniciado", icon: Circle, cls: "bg-background text-muted-foreground border-border" },
 };
 
 export function StatusBadge({ status, className }: { status: ItemStatus; className?: string }) {
