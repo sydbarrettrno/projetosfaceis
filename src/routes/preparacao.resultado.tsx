@@ -99,10 +99,10 @@ function ResultadoPage() {
       <header className="mx-auto mt-4 max-w-5xl px-4 sm:px-6">
         <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
           <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary">
-            Etapa 8 · Resultado de Conferência
+            Diagnóstico preliminar
           </p>
           <h1 className="mt-2 text-2xl font-semibold text-foreground sm:text-3xl">
-            Resultado de Conferência
+            Seu projeto está pronto para avançar?
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Casa Residencial Unifamiliar — leitura preliminar com base nos itens conferidos.
