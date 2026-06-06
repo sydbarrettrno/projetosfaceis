@@ -1,16 +1,21 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {
+  AlertCircle,
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
   ClipboardCheck,
+  HelpCircle,
   Info,
+  ListChecks,
   RotateCcw,
+  Sparkles,
 } from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Disclaimer } from "@/components/Disclaimer";
+import { AutosaveStatus } from "@/components/AutosaveStatus";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
