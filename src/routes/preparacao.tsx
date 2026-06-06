@@ -102,17 +102,23 @@ function PreparacaoPage() {
               </h1>
               <p className="mt-1 text-sm text-muted-foreground">{stage.description}</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <AutosaveStatus trigger={snapshot} />
               <Button variant="outline" size="sm" onClick={reset}>
                 <RotateCcw className="mr-1.5 h-3.5 w-3.5" /> Reiniciar
               </Button>
               <Button asChild size="sm">
                 <Link to="/preparacao/resultado">
-                  <ClipboardCheck className="mr-1.5 h-3.5 w-3.5" /> Resultado
+                  <ClipboardCheck className="mr-1.5 h-3.5 w-3.5" /> Diagnóstico
                 </Link>
               </Button>
             </div>
           </div>
+
+          <p className="mt-3 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Sparkles className="h-3.5 w-3.5 text-primary" />
+            Você está preparando o projeto para conferência preliminar.
+          </p>
 
           <div className="mt-5 grid gap-4 sm:grid-cols-[1fr_auto]">
             <div>
@@ -204,46 +210,127 @@ function PreparacaoPage() {
           </div>
         )}
 
-        <div className="grid gap-4 md:grid-cols-2">
-          {stage.items.map((item) => (
-            <ItemCard
-              key={item.id}
-              item={item}
-              state={get(stage.id, item.id)}
-              onStatus={(s) => setStatus(stage.id, item.id, s)}
-              onObs={(v) => setObservation(stage.id, item.id, v)}
-              onValue={(v) => setValue(stage.id, item.id, v)}
-            />
-          ))}
-        </div>
+        <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
+          <div>
+            <div className="grid gap-4 md:grid-cols-2">
+              {stage.items.map((item) => (
+                <ItemCard
+                  key={item.id}
+                  item={item}
+                  state={get(stage.id, item.id)}
+                  onStatus={(s) => setStatus(stage.id, item.id, s)}
+                  onObs={(v) => setObservation(stage.id, item.id, v)}
+                  onValue={(v) => setValue(stage.id, item.id, v)}
+                />
+              ))}
+            </div>
 
-        {/* Nav buttons */}
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-5">
-          <Button
-            variant="outline"
-            disabled={!prevStage}
-            onClick={() => prevStage && setStageIdx(stageIdx - 1)}
-          >
-            <ArrowLeft className="mr-1.5 h-4 w-4" />
-            {prevStage ? `Etapa ${prevStage.number} · ${prevStage.shortTitle}` : "Anterior"}
-          </Button>
-          {nextStage ? (
-            <Button onClick={() => setStageIdx(stageIdx + 1)}>
-              Etapa {nextStage.number} · {nextStage.shortTitle}
-              <ArrowRight className="ml-1.5 h-4 w-4" />
-            </Button>
-          ) : (
-            <Button asChild>
-              <Link to="/preparacao/resultado">
-                Ver resultado de conferência <ArrowRight className="ml-1.5 h-4 w-4" />
-              </Link>
-            </Button>
-          )}
-        </div>
+            {/* Nav buttons */}
+            <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-5">
+              <Button
+                variant="outline"
+                disabled={!prevStage}
+                onClick={() => prevStage && setStageIdx(stageIdx - 1)}
+              >
+                <ArrowLeft className="mr-1.5 h-4 w-4" />
+                {prevStage ? `Etapa ${prevStage.number} · ${prevStage.shortTitle}` : "Anterior"}
+              </Button>
+              {nextStage ? (
+                <Button onClick={() => setStageIdx(stageIdx + 1)}>
+                  Etapa {nextStage.number} · {nextStage.shortTitle}
+                  <ArrowRight className="ml-1.5 h-4 w-4" />
+                </Button>
+              ) : (
+                <Button asChild>
+                  <Link to="/preparacao/resultado">
+                    Ver diagnóstico preliminar <ArrowRight className="ml-1.5 h-4 w-4" />
+                  </Link>
+                </Button>
+              )}
+            </div>
 
-        <Disclaimer className="mt-8" compact />
+            <Disclaimer className="mt-8" compact />
+          </div>
+
+          <ContextualHelpPanel
+            stageTitle={stage.shortTitle}
+            stageNote={stage.note}
+            pendentes={stage.items
+              .filter((it) => {
+                const st = snapshot[`${stage.id}::${it.id}`]?.status ?? "not_started";
+                return st === "pending" || st === "not_started";
+              })
+              .slice(0, 6)
+              .map((it) => it.title)}
+            nextStageLabel={
+              nextStage ? `Etapa ${nextStage.number} · ${nextStage.shortTitle}` : "Diagnóstico preliminar"
+            }
+          />
+        </div>
       </main>
     </div>
+  );
+}
+
+function ContextualHelpPanel({
+  stageTitle,
+  stageNote,
+  pendentes,
+  nextStageLabel,
+}: {
+  stageTitle: string;
+  stageNote?: string;
+  pendentes: string[];
+  nextStageLabel: string;
+}) {
+  return (
+    <aside className="space-y-3 lg:sticky lg:top-20 lg:self-start">
+      <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+        <div className="flex items-center gap-2 text-primary">
+          <HelpCircle className="h-4 w-4" />
+          <span className="text-[11px] font-semibold uppercase tracking-wider">
+            Assistente de preenchimento
+          </span>
+        </div>
+        <h3 className="mt-2 text-sm font-semibold text-foreground">{stageTitle}</h3>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+          {stageNote ??
+            "Marque cada item como conferido, pendente ou não se aplica. Use o campo de observação quando precisar registrar uma decisão técnica."}
+        </p>
+      </div>
+
+      <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+        <div className="flex items-center justify-between">
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-warning-foreground">
+            <AlertCircle className="h-3.5 w-3.5" /> Pendências da etapa
+          </span>
+          <span className="text-xs font-semibold tabular-nums text-muted-foreground">
+            {pendentes.length}
+          </span>
+        </div>
+        {pendentes.length === 0 ? (
+          <p className="mt-2 text-xs text-muted-foreground">
+            Nenhuma pendência registrada nesta etapa.
+          </p>
+        ) : (
+          <ul className="mt-2 space-y-1.5">
+            {pendentes.map((t) => (
+              <li key={t} className="flex items-start gap-1.5 text-xs text-foreground">
+                <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-warning" />
+                {t}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+        <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-primary">
+          <ListChecks className="h-3.5 w-3.5" /> Próximo passo
+        </span>
+        <p className="mt-1 text-sm font-medium text-foreground">{nextStageLabel}</p>
+      </div>
+    </aside>
   );
 }
 
