@@ -1,4 +1,9 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Link,
+  Outlet,
+  useRouterState,
+} from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {
   AlertCircle,
@@ -41,6 +46,10 @@ function PreparacaoPage() {
   useHydrate();
   const { snapshot, get, setStatus, setObservation, setValue, reset } = useTrilhaState();
   const [stageIdx, setStageIdx] = useState(0);
+  const showResultRoute = useRouterState({
+    select: (state) =>
+      state.location.pathname.startsWith("/preparacao/resultado"),
+  });
 
   const stats = useMemo(() => {
     let total = 0;
@@ -75,6 +84,10 @@ function PreparacaoPage() {
     });
     return { done, total: stage.items.length };
   }, [snapshot, stage]);
+
+  if (showResultRoute) {
+    return <Outlet />;
+  }
 
   return (
     <div className="min-h-screen bg-background pb-24">

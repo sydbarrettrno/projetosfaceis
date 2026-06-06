@@ -10,12 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PreparacaoRouteImport } from './routes/preparacao'
+import { Route as DiagnosticoRouteImport } from './routes/diagnostico'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PreparacaoResultadoRouteImport } from './routes/preparacao.resultado'
 
 const PreparacaoRoute = PreparacaoRouteImport.update({
   id: '/preparacao',
   path: '/preparacao',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DiagnosticoRoute = DiagnosticoRouteImport.update({
+  id: '/diagnostico',
+  path: '/diagnostico',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -31,30 +37,39 @@ const PreparacaoResultadoRoute = PreparacaoResultadoRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/diagnostico': typeof DiagnosticoRoute
   '/preparacao': typeof PreparacaoRouteWithChildren
   '/preparacao/resultado': typeof PreparacaoResultadoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/diagnostico': typeof DiagnosticoRoute
   '/preparacao': typeof PreparacaoRouteWithChildren
   '/preparacao/resultado': typeof PreparacaoResultadoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/diagnostico': typeof DiagnosticoRoute
   '/preparacao': typeof PreparacaoRouteWithChildren
   '/preparacao/resultado': typeof PreparacaoResultadoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/preparacao' | '/preparacao/resultado'
+  fullPaths: '/' | '/diagnostico' | '/preparacao' | '/preparacao/resultado'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/preparacao' | '/preparacao/resultado'
-  id: '__root__' | '/' | '/preparacao' | '/preparacao/resultado'
+  to: '/' | '/diagnostico' | '/preparacao' | '/preparacao/resultado'
+  id:
+    | '__root__'
+    | '/'
+    | '/diagnostico'
+    | '/preparacao'
+    | '/preparacao/resultado'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DiagnosticoRoute: typeof DiagnosticoRoute
   PreparacaoRoute: typeof PreparacaoRouteWithChildren
 }
 
@@ -65,6 +80,13 @@ declare module '@tanstack/react-router' {
       path: '/preparacao'
       fullPath: '/preparacao'
       preLoaderRoute: typeof PreparacaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/diagnostico': {
+      id: '/diagnostico'
+      path: '/diagnostico'
+      fullPath: '/diagnostico'
+      preLoaderRoute: typeof DiagnosticoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -98,8 +120,19 @@ const PreparacaoRouteWithChildren = PreparacaoRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DiagnosticoRoute: DiagnosticoRoute,
   PreparacaoRoute: PreparacaoRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

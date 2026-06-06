@@ -3,10 +3,8 @@ import { useMemo } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
-  ArrowRight,
   ClipboardCheck,
   FileCheck2,
-  Phone,
   RotateCcw,
   ShieldCheck,
 } from "lucide-react";
@@ -48,11 +46,21 @@ function ResultadoPage() {
       pending = 0,
       na = 0,
       notStarted = 0;
-    const stageProgress: { id: string; title: string; number: number; done: number; total: number }[] = [];
+    const stageProgress: {
+      id: string;
+      title: string;
+      number: number;
+      done: number;
+      total: number;
+    }[] = [];
     STAGES.forEach((s) => {
       let sDone = 0;
       s.items.forEach((it) => {
-        const st = snapshot[`${s.id}::${it.id}`] ?? { status: "not_started", observation: "", value: "" };
+        const st = snapshot[`${s.id}::${it.id}`] ?? {
+          status: "not_started",
+          observation: "",
+          value: "",
+        };
         rows.push({
           stage: s.title,
           itemId: it.id,
@@ -70,7 +78,13 @@ function ResultadoPage() {
           sDone++;
         } else notStarted++;
       });
-      stageProgress.push({ id: s.id, title: s.shortTitle, number: s.number, done: sDone, total: s.items.length });
+      stageProgress.push({
+        id: s.id,
+        title: s.shortTitle,
+        number: s.number,
+        done: sDone,
+        total: s.items.length,
+      });
     });
     const total = rows.length;
     const pct = total === 0 ? 0 : Math.round(((checked + na) / total) * 100);
@@ -99,13 +113,13 @@ function ResultadoPage() {
       <header className="mx-auto mt-4 max-w-5xl px-4 sm:px-6">
         <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
           <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary">
-            Diagnóstico preliminar
+            Resultado de Conferência
           </p>
           <h1 className="mt-2 text-2xl font-semibold text-foreground sm:text-3xl">
-            Seu projeto está pronto para avançar?
+            Resumo da conferência orientativa
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Casa Residencial Unifamiliar — leitura preliminar com base nos itens conferidos.
+            Casa Residencial Unifamiliar — resumo consolidado da conferência orientativa.
           </p>
 
           {(() => {
@@ -113,15 +127,15 @@ function ResultadoPage() {
             const pendentesCount = data.pending;
             const status =
               pct >= 85 && pendentesCount === 0
-                ? { label: "Pronto para revisão final", tone: "success" as const }
+                ? { label: "Conferência pronta para revisão", tone: "success" as const }
                 : pct >= 60
-                  ? { label: "Atenção moderada", tone: "warning" as const }
-                  : { label: "Requer preparação", tone: "danger" as const };
-            const risco =
+                  ? { label: "Conferência parcial", tone: "warning" as const }
+                  : { label: "Conferência inicial", tone: "danger" as const };
+            const attentionLevel =
               pendentesCount === 0 && pct >= 85
                 ? "Baixo"
                 : pendentesCount <= 3 && pct >= 60
-                  ? "Médio"
+                  ? "Moderado"
                   : "Alto";
             const proxPasso =
               pendentesCount > 0
@@ -140,7 +154,7 @@ function ResultadoPage() {
                   <div className="rounded-xl border border-border bg-surface p-4">
                     <div className="flex items-end justify-between">
                       <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                        Prontidão geral
+                        Cobertura da conferência
                       </span>
                       <span className="text-3xl font-semibold tabular-nums text-foreground">
                         {pct}%
@@ -159,8 +173,8 @@ function ResultadoPage() {
                       </span>
                       <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2 py-0.5 text-xs text-foreground">
                         <AlertTriangle className="h-3.5 w-3.5 text-warning" />
-                        Risco de retrabalho:{" "}
-                        <strong className="font-semibold">{risco}</strong>
+                        Nível de atenção orientativo:{" "}
+                        <strong className="font-semibold">{attentionLevel}</strong>
                       </span>
                     </div>
                   </div>
@@ -191,12 +205,6 @@ function ResultadoPage() {
                 <ClipboardCheck className="mr-1.5 h-4 w-4" /> Revisar pendências
               </Link>
             </Button>
-            <Button asChild variant="secondary">
-              <a href="mailto:contato@projetofacil.app?subject=Solicitar%20confer%C3%AAncia%20profissional">
-                <Phone className="mr-1.5 h-4 w-4" /> Solicitar conferência profissional
-                <ArrowRight className="ml-1.5 h-4 w-4" />
-              </a>
-            </Button>
             <Button variant="outline" onClick={reset}>
               <RotateCcw className="mr-1.5 h-4 w-4" /> Reiniciar
             </Button>
@@ -220,10 +228,7 @@ function ResultadoPage() {
               const pct = s.total === 0 ? 0 : Math.round((s.done / s.total) * 100);
               const complete = s.done === s.total;
               return (
-                <li
-                  key={s.id}
-                  className="rounded-lg border border-border bg-surface px-3 py-2"
-                >
+                <li key={s.id} className="rounded-lg border border-border bg-surface px-3 py-2">
                   <div className="flex items-center justify-between text-sm">
                     <span className="font-medium text-foreground">
                       {s.number}. {s.title}
@@ -246,11 +251,19 @@ function ResultadoPage() {
 
         <Group title="Itens pendentes" items={pendentes} empty="Sem pendências registradas." />
         <Group title="Itens conferidos" items={conferidos} empty="Nenhum item conferido ainda." />
-        <Group title="Não se aplica" items={naItens} empty="Nenhum item marcado como não aplicável." />
-        <Group title="Itens não iniciados" items={naoIniciados} empty="Todos os itens foram avaliados." />
+        <Group
+          title="Não se aplica"
+          items={naItens}
+          empty="Nenhum item marcado como não aplicável."
+        />
+        <Group
+          title="Itens não iniciados"
+          items={naoIniciados}
+          empty="Todos os itens foram avaliados."
+        />
 
         <section className="rounded-xl border border-border bg-card p-5 shadow-sm">
-          <h2 className="text-sm font-semibold text-foreground">Observações do profissional</h2>
+          <h2 className="text-sm font-semibold text-foreground">Observações registradas</h2>
           {observacoes.length === 0 ? (
             <p className="mt-2 text-sm text-muted-foreground">Nenhuma observação registrada.</p>
           ) : (

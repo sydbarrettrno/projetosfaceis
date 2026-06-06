@@ -1,52 +1,49 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import type { ReactNode } from "react";
 import {
   ArrowRight,
-  ClipboardCheck,
-  FileText,
-  Layers,
-  PlayCircle,
-  Ruler,
+  Building2,
+  ClipboardList,
+  FileSearch,
+  Home,
+  ListChecks,
   ShieldCheck,
-  Sparkles,
-  Stamp,
 } from "lucide-react";
-import { SiteHeader } from "@/components/SiteHeader";
 import { Disclaimer } from "@/components/Disclaimer";
+import { SiteHeader } from "@/components/SiteHeader";
 import { Button } from "@/components/ui/button";
-import { STAGES } from "@/data/trilha";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Projeto Fácil — Descubra se seu projeto está pronto" },
+      { title: "Projeto Fácil — Diagnóstico preliminar de projetos" },
       {
         name: "description",
         content:
-          "Organize as informações do seu projeto de casa, confira pendências e reduza o risco de retrabalho antes do protocolo.",
+          "Receba uma orientação inicial sobre possíveis pendências de uma casa residencial unifamiliar simples.",
       },
-      { property: "og:title", content: "Projeto Fácil — Descomplicando Projetos" },
+      {
+        property: "og:title",
+        content: "Projeto Fácil — Descomplicando Projetos",
+      },
       {
         property: "og:description",
         content:
-          "Diagnóstico preliminar guiado para projeto de casa residencial unifamiliar.",
+          "Identifique possíveis pendências e próximos passos antes de protocolar seu projeto.",
+      },
+      {
+        property: "og:image",
+        content: "/images/hero-casa-contemporanea.jpg",
       },
     ],
   }),
   component: HomePage,
 });
 
-const HERO_PILLS = [
-  { icon: Layers, label: "7 etapas guiadas" },
-  { icon: ClipboardCheck, label: "Pendências visíveis" },
-  { icon: Sparkles, label: "Resultado preliminar" },
-  { icon: ShieldCheck, label: "Sem promessa de aprovação" },
-];
-
-const PROJECT_ICONS = [
-  { icon: Ruler, label: "Plantas e cotas" },
-  { icon: FileText, label: "Documentos" },
-  { icon: Stamp, label: "ART / RRT" },
-  { icon: ClipboardCheck, label: "Análise técnica" },
+const VALUE_POINTS = [
+  "Resultado preliminar em poucos minutos",
+  "Pendências e próximos passos visíveis",
+  "Sem promessa de aprovação",
 ];
 
 function HomePage() {
@@ -54,182 +51,200 @@ function HomePage() {
     <div className="min-h-screen bg-background">
       <SiteHeader />
 
-      {/* Hero */}
-      <section className="relative overflow-hidden border-b border-border">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 -z-10"
-          style={{
-            background:
-              "radial-gradient(80% 60% at 80% 0%, color-mix(in oklab, var(--primary) 18%, transparent), transparent 60%), radial-gradient(60% 50% at 0% 100%, color-mix(in oklab, var(--info) 12%, transparent), transparent 60%)",
-          }}
-        />
-        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 sm:py-20 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-          <div>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">
-              <Sparkles className="h-3 w-3" /> Diagnóstico preliminar de projeto
-            </span>
-            <h1 className="mt-4 text-3xl font-semibold leading-[1.1] tracking-tight text-foreground sm:text-5xl">
-              Descubra se seu projeto está pronto para avançar
+      <section
+        className="relative flex min-h-[max(500px,calc(100svh-140px))] items-center overflow-hidden border-b border-border bg-cover bg-center"
+        style={{
+          backgroundImage: "url('/images/hero-casa-contemporanea.jpg')",
+        }}
+      >
+        <div className="absolute inset-0 bg-black/45" aria-hidden />
+        <div className="relative mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
+          <div className="max-w-2xl text-white">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/80">
+              Diagnóstico preliminar gratuito
+            </p>
+            <h1 className="mt-4 text-3xl font-semibold leading-tight sm:text-5xl">
+              Receba uma orientação inicial sobre possíveis pendências antes de protocolar seu
+              projeto.
             </h1>
-            <p className="mt-4 max-w-xl text-base text-muted-foreground sm:text-lg">
-              Organize as informações do seu projeto, confira pendências e reduza o risco de
-              retrabalho antes do protocolo.
+            <p className="mt-5 max-w-xl text-base leading-relaxed text-white/85 sm:text-lg">
+              Responda perguntas rápidas e veja um resumo do caso, o nível de atenção e os próximos
+              passos para uma casa residencial unifamiliar simples.
             </p>
 
             <div className="mt-7 flex flex-wrap items-center gap-3">
-              <Button asChild size="lg" className="shadow-sm">
-                <Link to="/preparacao">
-                  Iniciar diagnóstico gratuito <ArrowRight className="ml-1.5 h-4 w-4" />
+              <Button asChild size="lg" className="shadow-lg">
+                <Link to="/diagnostico">
+                  Iniciar diagnóstico gratuito <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="outline">
-                <a href="#como-funciona">
-                  <PlayCircle className="mr-1.5 h-4 w-4" /> Ver como funciona
-                </a>
-              </Button>
+              <Link
+                to="/preparacao"
+                className="inline-flex min-h-10 items-center gap-1.5 rounded-md border border-white/50 bg-black/20 px-4 text-sm font-medium text-white backdrop-blur-sm hover:bg-black/35"
+              >
+                Abrir trilha completa <ListChecks className="h-4 w-4" />
+              </Link>
             </div>
 
-            <ul className="mt-8 grid grid-cols-2 gap-2 sm:max-w-lg">
-              {HERO_PILLS.map(({ icon: Icon, label }) => (
-                <li
-                  key={label}
-                  className="flex items-center gap-2 rounded-lg border border-border bg-card/70 px-3 py-2 text-xs font-medium text-foreground shadow-[0_1px_0_oklch(0_0_0/4%)]"
-                >
-                  <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 text-primary">
-                    <Icon className="h-3.5 w-3.5" />
-                  </span>
-                  {label}
+            <ul className="mt-7 flex max-w-xl flex-wrap gap-x-5 gap-y-2 text-xs font-medium text-white/85">
+              {VALUE_POINTS.map((point) => (
+                <li key={point} className="inline-flex items-center gap-1.5">
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  {point}
                 </li>
               ))}
             </ul>
           </div>
-
-          {/* Decorative "blueprint" card */}
-          <div className="relative">
-            <div className="rounded-2xl border border-border bg-card p-5 shadow-xl shadow-primary/5 sm:p-6">
-              <div className="flex items-center justify-between text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                <span className="inline-flex items-center gap-1.5">
-                  <Ruler className="h-3.5 w-3.5 text-primary" /> Prancha · Casa Unifamiliar
-                </span>
-                <span className="rounded-full border border-success/30 bg-success/10 px-2 py-0.5 text-success">
-                  Prévia
-                </span>
-              </div>
-              <div
-                className="mt-4 aspect-[4/3] w-full rounded-lg border border-border"
-                style={{
-                  backgroundImage:
-                    "linear-gradient(color-mix(in oklab, var(--primary) 12%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in oklab, var(--primary) 12%, transparent) 1px, transparent 1px)",
-                  backgroundSize: "24px 24px",
-                  backgroundColor: "var(--surface)",
-                }}
-                aria-hidden
-              >
-                <div className="relative h-full w-full p-4">
-                  <div className="absolute left-[10%] top-[18%] h-[58%] w-[62%] rounded-md border-2 border-primary/60 bg-primary/5" />
-                  <div className="absolute left-[14%] top-[26%] h-[20%] w-[26%] rounded-sm border border-primary/40" />
-                  <div className="absolute left-[44%] top-[26%] h-[20%] w-[26%] rounded-sm border border-primary/40" />
-                  <div className="absolute left-[14%] top-[52%] h-[22%] w-[56%] rounded-sm border border-primary/40" />
-                  <div className="absolute bottom-3 right-3 rounded-md border border-border bg-card px-2 py-1 text-[10px] font-medium text-foreground shadow-sm">
-                    Conferência: 62%
-                  </div>
-                </div>
-              </div>
-              <div className="mt-4 grid grid-cols-4 gap-2">
-                {PROJECT_ICONS.map(({ icon: Icon, label }) => (
-                  <div
-                    key={label}
-                    className="flex flex-col items-center gap-1 rounded-md border border-border bg-surface px-2 py-2 text-center"
-                  >
-                    <Icon className="h-4 w-4 text-primary" />
-                    <span className="text-[10px] font-medium text-foreground">{label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
-      {/* Como funciona */}
-      <main id="como-funciona" className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">
+      <main>
+        <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
+          <div className="max-w-2xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
               Como funciona
             </p>
-            <h2 className="mt-1 text-2xl font-semibold text-foreground sm:text-3xl">
-              Uma etapa por vez, com pendências visíveis
+            <h2 className="mt-2 text-2xl font-semibold text-foreground sm:text-3xl">
+              Valor primeiro, aprofundamento depois
             </h2>
-            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              Você responde itens objetivos sobre o projeto e recebe um diagnóstico preliminar
-              do que ainda falta antes do protocolo. Sem planilhas, sem promessas.
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              O diagnóstico curto organiza o caso sem obrigar você a preencher toda a trilha antes
+              de receber uma orientação útil.
             </p>
           </div>
-          <Button asChild variant="outline">
-            <Link to="/preparacao">
-              Iniciar agora <ArrowRight className="ml-1.5 h-4 w-4" />
-            </Link>
-          </Button>
-        </div>
 
-        <ol className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {STAGES.map((s) => (
-            <li
-              key={s.id}
-              className="group rounded-xl border border-border bg-card p-4 shadow-sm transition hover:border-primary/40 hover:shadow-md"
-            >
-              <div className="flex items-center gap-2">
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-                  {s.number}
-                </span>
-                <span className="text-sm font-semibold text-foreground">{s.shortTitle}</span>
-              </div>
-              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                {s.description}
+          <div className="mt-7 grid gap-4 sm:grid-cols-3">
+            <Step
+              number="1"
+              icon={<ClipboardList className="h-5 w-5" />}
+              title="Conte o básico"
+              description="Informe seu contato e responda quatro perguntas objetivas."
+            />
+            <Step
+              number="2"
+              icon={<FileSearch className="h-5 w-5" />}
+              title="Receba a orientação"
+              description="Veja possíveis pendências, nível de atenção e próximos passos."
+            />
+            <Step
+              number="3"
+              icon={<ShieldCheck className="h-5 w-5" />}
+              title="Escolha como seguir"
+              description="Continue na trilha gratuita ou registre interesse na conferência individual."
+            />
+          </div>
+        </section>
+
+        <section className="border-y border-border bg-surface">
+          <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+                Projeto começa com clareza
               </p>
-            </li>
-          ))}
-        </ol>
+              <h2 className="mt-2 text-2xl font-semibold text-foreground sm:text-3xl">
+                Menos retrabalho na preparação
+              </h2>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                Casas e edifícios dependem de informações coerentes, documentos conferidos e
+                decisões técnicas registradas. Nesta versão, o fluxo funcional permanece limitado a
+                casa residencial unifamiliar simples.
+              </p>
+              <div className="mt-5 flex flex-wrap gap-3">
+                <Button asChild>
+                  <Link to="/diagnostico">
+                    Começar agora <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link to="/preparacao">
+                    <ListChecks className="h-4 w-4" /> Ver as 7 etapas
+                  </Link>
+                </Button>
+              </div>
+            </div>
 
-        <div className="mt-10 grid gap-4 lg:grid-cols-[1fr_320px]">
-          <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-            <h3 className="text-base font-semibold text-foreground">O que você recebe ao final</h3>
-            <ul className="mt-3 grid gap-2 text-sm text-foreground sm:grid-cols-2">
-              <li className="flex gap-2"><Check /> Prontidão geral do projeto</li>
-              <li className="flex gap-2"><Check /> Lista de pendências a resolver</li>
-              <li className="flex gap-2"><Check /> Risco de retrabalho estimado</li>
-              <li className="flex gap-2"><Check /> Próximo passo sugerido</li>
-            </ul>
-            <div className="mt-5">
-              <Button asChild>
-                <Link to="/preparacao">
-                  Iniciar diagnóstico gratuito <ArrowRight className="ml-1.5 h-4 w-4" />
-                </Link>
-              </Button>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <figure className="overflow-hidden rounded-lg border border-border bg-card">
+                <img
+                  src="/images/casa-urbana.jpg"
+                  alt="Casa urbana contemporânea de dois pavimentos"
+                  className="aspect-[4/3] w-full object-cover"
+                  loading="lazy"
+                />
+                <figcaption className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
+                  <Home className="h-3.5 w-3.5 text-primary" />
+                  Casa residencial unifamiliar
+                </figcaption>
+              </figure>
+              <figure className="overflow-hidden rounded-lg border border-border bg-card">
+                <img
+                  src="/images/edificio-residencial.jpg"
+                  alt="Edifício residencial contemporâneo com varandas arborizadas"
+                  className="aspect-[4/3] w-full object-cover"
+                  loading="lazy"
+                />
+                <figcaption className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
+                  <Building2 className="h-3.5 w-3.5 text-primary" />
+                  Contexto visual de projetos residenciais
+                </figcaption>
+              </figure>
             </div>
           </div>
-          <Disclaimer />
-        </div>
+        </section>
+
+        <section className="mx-auto grid max-w-6xl gap-5 px-4 py-12 sm:px-6 lg:grid-cols-[1fr_320px]">
+          <div className="rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
+            <div className="flex items-start gap-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Home className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Escopo funcional desta versão
+                </p>
+                <h2 className="mt-1 text-lg font-semibold text-foreground">
+                  Casa Residencial Unifamiliar
+                </h2>
+                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                  Diagnóstico curto e trilha detalhada para preparação e conferência orientativa,
+                  sem garantir aprovação.
+                </p>
+              </div>
+            </div>
+          </div>
+          <Disclaimer compact />
+        </section>
       </main>
 
       <footer className="border-t border-border bg-surface">
         <div className="mx-auto max-w-6xl px-4 py-6 text-xs text-muted-foreground sm:px-6">
-          Projeto Fácil · Ferramenta orientativa. Não substitui o profissional responsável nem
-          a análise oficial do órgão competente.
+          Projeto Fácil · Auxílio de preparação e conferência. Não substitui o profissional
+          responsável nem a análise oficial do órgão competente.
         </div>
       </footer>
     </div>
   );
 }
 
-function Check() {
+function Step({
+  number,
+  icon,
+  title,
+  description,
+}: {
+  number: string;
+  icon: ReactNode;
+  title: string;
+  description: string;
+}) {
   return (
-    <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-success/15 text-success">
-      <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth={3}>
-        <path d="M5 12l5 5L20 7" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    </span>
+    <article className="rounded-lg border border-border bg-card p-5">
+      <div className="flex items-center justify-between">
+        <span className="text-primary">{icon}</span>
+        <span className="text-xs font-semibold text-muted-foreground">{number}/3</span>
+      </div>
+      <h3 className="mt-4 text-sm font-semibold text-foreground">{title}</h3>
+      <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{description}</p>
+    </article>
   );
 }
