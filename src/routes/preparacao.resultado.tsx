@@ -1,6 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo } from "react";
-import { ArrowLeft, ClipboardCheck, FileCheck2, RotateCcw } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
+  ClipboardCheck,
+  FileCheck2,
+  Phone,
+  RotateCcw,
+  ShieldCheck,
+} from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Disclaimer } from "@/components/Disclaimer";
@@ -90,26 +99,84 @@ function ResultadoPage() {
       <header className="mx-auto mt-4 max-w-5xl px-4 sm:px-6">
         <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
           <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary">
-            Etapa 8 · Resultado de Conferência
+            Diagnóstico preliminar
           </p>
           <h1 className="mt-2 text-2xl font-semibold text-foreground sm:text-3xl">
-            Resultado de Conferência
+            Seu projeto está pronto para avançar?
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Casa Residencial Unifamiliar — preparação consolidada para protocolo.
+            Casa Residencial Unifamiliar — leitura preliminar com base nos itens conferidos.
           </p>
 
-          <div className="mt-5">
-            <div className="flex items-end justify-between">
-              <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Percentual final de preparação
-              </span>
-              <span className="text-2xl font-semibold tabular-nums text-foreground">
-                {data.pct}%
-              </span>
-            </div>
-            <Progress value={data.pct} className="mt-2 h-3" />
-          </div>
+          {(() => {
+            const pct = data.pct;
+            const pendentesCount = data.pending;
+            const status =
+              pct >= 85 && pendentesCount === 0
+                ? { label: "Pronto para revisão final", tone: "success" as const }
+                : pct >= 60
+                  ? { label: "Atenção moderada", tone: "warning" as const }
+                  : { label: "Requer preparação", tone: "danger" as const };
+            const risco =
+              pendentesCount === 0 && pct >= 85
+                ? "Baixo"
+                : pendentesCount <= 3 && pct >= 60
+                  ? "Médio"
+                  : "Alto";
+            const proxPasso =
+              pendentesCount > 0
+                ? "Revisar pendências antes do protocolo"
+                : pct < 100
+                  ? "Concluir itens não iniciados"
+                  : "Encaminhar conferência profissional";
+            const toneCls = {
+              success: "border-success/30 bg-success/10 text-success",
+              warning: "border-warning/40 bg-warning/15 text-warning-foreground",
+              danger: "border-destructive/30 bg-destructive/10 text-destructive",
+            }[status.tone];
+            return (
+              <>
+                <div className="mt-5 grid gap-4 sm:grid-cols-[1.2fr_1fr] sm:items-stretch">
+                  <div className="rounded-xl border border-border bg-surface p-4">
+                    <div className="flex items-end justify-between">
+                      <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                        Prontidão geral
+                      </span>
+                      <span className="text-3xl font-semibold tabular-nums text-foreground">
+                        {pct}%
+                      </span>
+                    </div>
+                    <Progress value={pct} className="mt-2 h-3" />
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <span
+                        className={cn(
+                          "inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs font-semibold",
+                          toneCls,
+                        )}
+                      >
+                        <ShieldCheck className="h-3.5 w-3.5" />
+                        {status.label}
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2 py-0.5 text-xs text-foreground">
+                        <AlertTriangle className="h-3.5 w-3.5 text-warning" />
+                        Risco de retrabalho:{" "}
+                        <strong className="font-semibold">{risco}</strong>
+                      </span>
+                    </div>
+                  </div>
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+                    <span className="text-[11px] font-medium uppercase tracking-wider text-primary">
+                      Próximo passo sugerido
+                    </span>
+                    <p className="mt-1 text-base font-semibold text-foreground">{proxPasso}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Conferência preliminar não substitui análise oficial.
+                    </p>
+                  </div>
+                </div>
+              </>
+            );
+          })()}
 
           <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <BigStat label="Conferidos" value={data.checked} tone="success" />
@@ -121,11 +188,22 @@ function ResultadoPage() {
           <div className="mt-6 flex flex-wrap gap-2">
             <Button asChild>
               <Link to="/preparacao">
-                <ClipboardCheck className="mr-1.5 h-4 w-4" /> Continuar preparação
+                <ClipboardCheck className="mr-1.5 h-4 w-4" /> Revisar pendências
               </Link>
             </Button>
+            <Button asChild variant="secondary">
+              <a href="mailto:contato@projetofacil.app?subject=Solicitar%20confer%C3%AAncia%20profissional">
+                <Phone className="mr-1.5 h-4 w-4" /> Solicitar conferência profissional
+                <ArrowRight className="ml-1.5 h-4 w-4" />
+              </a>
+            </Button>
             <Button variant="outline" onClick={reset}>
-              <RotateCcw className="mr-1.5 h-4 w-4" /> Reiniciar preparação
+              <RotateCcw className="mr-1.5 h-4 w-4" /> Reiniciar
+            </Button>
+            <Button asChild variant="ghost">
+              <Link to="/preparacao">
+                <ArrowLeft className="mr-1.5 h-4 w-4" /> Voltar à preparação
+              </Link>
             </Button>
           </div>
         </div>
