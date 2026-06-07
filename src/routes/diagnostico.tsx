@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   ClipboardCheck,
   FileSearch,
+  FileText,
   RotateCcw,
   ShieldCheck,
 } from "lucide-react";
@@ -31,11 +32,13 @@ import {
   type PriorProtocol,
   type ServiceType,
 } from "@/data/diagnostico";
+import { registerDiagnosticLeadEvent, type DiagnosticLeadEventType } from "@/lib/diagnostico-lead";
 import {
   clearDiagnosticDraft,
   createEmptyDiagnosticDraft,
   loadDiagnosticDraft,
   saveDiagnosticDraft,
+  type DiagnosticStep,
 } from "@/lib/diagnostico-state";
 import { cn } from "@/lib/utils";
 
@@ -53,14 +56,26 @@ export const Route = createFileRoute("/diagnostico")({
   component: DiagnosticoPage,
 });
 
-type LeadErrors = Partial<Record<keyof LeadData, string>>;
+type LeadErrorField = keyof LeadData | "termsAccepted";
+type LeadErrors = Partial<Record<LeadErrorField, string>>;
 type AnswerErrors = Partial<Record<"serviceType" | "currentSituation" | "priorProtocol", string>>;
+
+const STEP_DETAILS: Record<DiagnosticStep, { number: number; progress: number }> = {
+  questions: { number: 1, progress: 25 },
+  preview: { number: 2, progress: 50 },
+  contact: { number: 3, progress: 75 },
+  result: { number: 4, progress: 100 },
+};
 
 function DiagnosticoPage() {
   const [draft, setDraft] = useState(createEmptyDiagnosticDraft);
   const [hydrated, setHydrated] = useState(false);
   const [leadErrors, setLeadErrors] = useState<LeadErrors>({});
   const [answerErrors, setAnswerErrors] = useState<AnswerErrors>({});
+  const [leadSubmitting, setLeadSubmitting] = useState(false);
+  const [registrationError, setRegistrationError] = useState("");
+  const [offerSubmitting, setOfferSubmitting] = useState<DiagnosticLeadEventType | null>(null);
+  const [offerError, setOfferError] = useState("");
 
   useEffect(() => {
     setDraft(loadDiagnosticDraft());
@@ -73,7 +88,6 @@ function DiagnosticoPage() {
 
   const result = useMemo(() => {
     if (
-      draft.step !== 3 ||
       !draft.answers.serviceType ||
       !draft.answers.currentSituation ||
       !draft.answers.priorProtocol
@@ -81,7 +95,7 @@ function DiagnosticoPage() {
       return null;
     }
     return calculatePreliminaryDiagnosis(draft.answers);
-  }, [draft.answers, draft.step]);
+  }, [draft.answers]);
 
   const updateLead = (field: keyof LeadData, value: string) => {
     setDraft((current) => ({
@@ -91,16 +105,6 @@ function DiagnosticoPage() {
     if (leadErrors[field]) {
       setLeadErrors((current) => ({ ...current, [field]: undefined }));
     }
-  };
-
-  const submitLead = (event: FormEvent) => {
-    event.preventDefault();
-    const errors = validateLead(draft.lead);
-    setLeadErrors(errors);
-    if (Object.keys(errors).length > 0) return;
-
-    setDraft((current) => ({ ...current, step: 2 }));
-    scrollToTop();
   };
 
   const submitAnswers = (event: FormEvent) => {
@@ -118,8 +122,97 @@ function DiagnosticoPage() {
     setAnswerErrors(errors);
     if (Object.keys(errors).length > 0) return;
 
-    setDraft((current) => ({ ...current, step: 3 }));
+    setDraft((current) => ({ ...current, step: "preview" }));
     scrollToTop();
+  };
+
+  const submitLead = async (event: FormEvent) => {
+    event.preventDefault();
+    const errors = validateLead(draft.lead, draft.termsAccepted);
+    setLeadErrors(errors);
+    setRegistrationError("");
+    if (Object.keys(errors).length > 0 || !result) return;
+
+    const normalizedLead = {
+      name: draft.lead.name.trim(),
+      whatsapp: draft.lead.whatsapp.trim(),
+      email: draft.lead.email.trim(),
+    };
+
+    setLeadSubmitting(true);
+    try {
+      const { registeredAt } = await registerDiagnosticLeadEvent({
+        type: "lead_registered",
+        lead: normalizedLead,
+        consent: {
+          termsAccepted: true,
+          marketingAccepted: draft.marketingAccepted,
+        },
+        answers: draft.answers,
+        result: {
+          attentionLevel: result.attentionLevel,
+          probableIssueCount: result.possibleIssues.length,
+        },
+      });
+
+      setDraft((current) => ({
+        ...current,
+        step: "result",
+        lead: normalizedLead,
+        leadRegisteredAt: registeredAt,
+      }));
+      scrollToTop();
+    } catch {
+      setRegistrationError(
+        "O resultado foi liberado, mas não foi possível registrar seus dados neste dispositivo.",
+      );
+      setDraft((current) => ({
+        ...current,
+        step: "result",
+        lead: normalizedLead,
+      }));
+      scrollToTop();
+    } finally {
+      setLeadSubmitting(false);
+    }
+  };
+
+  const registerOfferInterest = async (
+    type: "complete_report_interest" | "professional_review_interest",
+  ) => {
+    if (!result) return;
+
+    setOfferSubmitting(type);
+    setOfferError("");
+    try {
+      const { registeredAt } = await registerDiagnosticLeadEvent({
+        type,
+        lead: draft.lead,
+        consent: {
+          termsAccepted: true,
+          marketingAccepted: draft.marketingAccepted,
+        },
+        answers: draft.answers,
+        result: {
+          attentionLevel: result.attentionLevel,
+          probableIssueCount: result.possibleIssues.length,
+        },
+      });
+
+      setDraft((current) =>
+        type === "complete_report_interest"
+          ? { ...current, reportRequestedAt: registeredAt }
+          : {
+              ...current,
+              reviewRequested: true,
+              reviewRequestedAt: registeredAt,
+            },
+      );
+    } catch {
+      setOfferError("Não foi possível registrar este interesse no dispositivo. Tente novamente.");
+    } finally {
+      setOfferSubmitting(null);
+    }
   };
 
   const toggleDocument = (documentId: DocumentId, checked: boolean) => {
@@ -139,10 +232,12 @@ function DiagnosticoPage() {
     setDraft(createEmptyDiagnosticDraft());
     setLeadErrors({});
     setAnswerErrors({});
+    setRegistrationError("");
+    setOfferError("");
     scrollToTop();
   };
 
-  const progress = draft.step === 1 ? 33 : draft.step === 2 ? 67 : 100;
+  const stepDetails = STEP_DETAILS[draft.step];
 
   return (
     <div className="min-h-screen bg-background pb-16">
@@ -175,91 +270,21 @@ function DiagnosticoPage() {
                 próximos passos.
               </p>
             </div>
-            <span className="text-sm font-medium text-foreground">Etapa {draft.step} de 3</span>
+            <span className="text-sm font-medium text-foreground">
+              Etapa {stepDetails.number} de 4
+            </span>
           </div>
-          <Progress value={progress} className="mt-4 h-2" />
+          <Progress value={stepDetails.progress} className="mt-4 h-2" />
         </header>
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
           <section className="rounded-xl border border-border bg-card p-5 shadow-sm sm:p-7">
-            {draft.step === 1 && (
-              <form onSubmit={submitLead} noValidate>
-                <StepHeading
-                  eyebrow="Cadastro mínimo"
-                  title="Como podemos identificar seu diagnóstico?"
-                  description="Estes dados ficam salvos somente neste dispositivo nesta versão."
-                />
-
-                <div className="mt-6 grid gap-5">
-                  <Field
-                    id="lead-name"
-                    label="Nome"
-                    error={leadErrors.name}
-                    input={
-                      <Input
-                        id="lead-name"
-                        autoComplete="name"
-                        value={draft.lead.name}
-                        onChange={(event) => updateLead("name", event.target.value)}
-                        placeholder="Ex.: Ana Souza"
-                        aria-invalid={Boolean(leadErrors.name)}
-                        aria-describedby={leadErrors.name ? "lead-name-error" : undefined}
-                      />
-                    }
-                  />
-                  <div className="grid gap-5 sm:grid-cols-2">
-                    <Field
-                      id="lead-whatsapp"
-                      label="WhatsApp"
-                      error={leadErrors.whatsapp}
-                      input={
-                        <Input
-                          id="lead-whatsapp"
-                          type="tel"
-                          inputMode="tel"
-                          autoComplete="tel"
-                          value={draft.lead.whatsapp}
-                          onChange={(event) => updateLead("whatsapp", event.target.value)}
-                          placeholder="Ex.: (11) 99999-9999"
-                          aria-invalid={Boolean(leadErrors.whatsapp)}
-                          aria-describedby={leadErrors.whatsapp ? "lead-whatsapp-error" : undefined}
-                        />
-                      }
-                    />
-                    <Field
-                      id="lead-email"
-                      label="E-mail"
-                      error={leadErrors.email}
-                      input={
-                        <Input
-                          id="lead-email"
-                          type="email"
-                          autoComplete="email"
-                          value={draft.lead.email}
-                          onChange={(event) => updateLead("email", event.target.value)}
-                          placeholder="Ex.: ana@email.com"
-                          aria-invalid={Boolean(leadErrors.email)}
-                          aria-describedby={leadErrors.email ? "lead-email-error" : undefined}
-                        />
-                      }
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-7 flex justify-end">
-                  <Button type="submit" size="lg">
-                    Continuar <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </form>
-            )}
-
-            {draft.step === 2 && (
+            {draft.step === "questions" && (
               <form onSubmit={submitAnswers}>
                 <StepHeading
                   eyebrow="Perguntas rápidas"
                   title="Conte em que ponto o caso está"
-                  description="Marque apenas o que você sabe agora. O resultado não pressupõe que os documentos foram validados."
+                  description="Marque apenas o que você sabe agora. Nenhum contato é solicitado nesta etapa."
                 />
 
                 <div className="mt-6 space-y-7">
@@ -356,28 +381,232 @@ function DiagnosticoPage() {
                   />
                 </div>
 
-                <div className="mt-7 flex flex-wrap justify-between gap-3">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setDraft((current) => ({ ...current, step: 1 }))}
-                  >
-                    <ArrowLeft className="h-4 w-4" /> Voltar
-                  </Button>
+                <div className="mt-7 flex justify-end">
                   <Button type="submit" size="lg">
-                    Ver diagnóstico preliminar <ArrowRight className="h-4 w-4" />
+                    Ver prévia do resultado <ArrowRight className="h-4 w-4" />
                   </Button>
                 </div>
               </form>
             )}
 
-            {draft.step === 3 && result && (
+            {draft.step === "preview" && result && (
+              <div>
+                <StepHeading
+                  eyebrow="Prévia do resultado"
+                  title="Sua orientação preliminar está pronta"
+                  description="Veja uma prévia antes de decidir se quer acessar o resultado completo."
+                />
+
+                <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-lg border border-border bg-surface p-4">
+                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Nível de atenção
+                    </p>
+                    <div className="mt-3">
+                      <AttentionBadge level={result.attentionLevel} />
+                    </div>
+                  </div>
+                  <div className="rounded-lg border border-border bg-surface p-4">
+                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Pendências prováveis
+                    </p>
+                    <p className="mt-2 text-2xl font-semibold text-foreground">
+                      {result.possibleIssues.length}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-6 rounded-lg border border-primary/25 bg-primary/5 p-4">
+                  <p className="text-sm font-medium text-foreground">
+                    Preencha o cadastro mínimo para ver o resumo, as possíveis pendências e os
+                    próximos passos.
+                  </p>
+                </div>
+
+                <div className="mt-7 flex flex-wrap justify-between gap-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setDraft((current) => ({ ...current, step: "questions" }))}
+                  >
+                    <ArrowLeft className="h-4 w-4" /> Revisar respostas
+                  </Button>
+                  <Button
+                    type="button"
+                    size="lg"
+                    onClick={() => {
+                      setDraft((current) => ({ ...current, step: "contact" }));
+                      scrollToTop();
+                    }}
+                  >
+                    Ver resultado completo <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {draft.step === "contact" && result && (
+              <form onSubmit={submitLead} noValidate>
+                <StepHeading
+                  eyebrow="Cadastro mínimo"
+                  title="Como podemos identificar seu diagnóstico?"
+                  description="Nome, WhatsApp e e-mail são os únicos dados pessoais solicitados."
+                />
+
+                <div className="mt-6 grid gap-5">
+                  <Field
+                    id="lead-name"
+                    label="Nome"
+                    error={leadErrors.name}
+                    input={
+                      <Input
+                        id="lead-name"
+                        autoComplete="name"
+                        value={draft.lead.name}
+                        onChange={(event) => updateLead("name", event.target.value)}
+                        placeholder="Ex.: Ana Souza"
+                        aria-invalid={Boolean(leadErrors.name)}
+                        aria-describedby={leadErrors.name ? "lead-name-error" : undefined}
+                      />
+                    }
+                  />
+                  <div className="grid gap-5 sm:grid-cols-2">
+                    <Field
+                      id="lead-whatsapp"
+                      label="WhatsApp"
+                      error={leadErrors.whatsapp}
+                      input={
+                        <Input
+                          id="lead-whatsapp"
+                          type="tel"
+                          inputMode="tel"
+                          autoComplete="tel"
+                          value={draft.lead.whatsapp}
+                          onChange={(event) => updateLead("whatsapp", event.target.value)}
+                          placeholder="Ex.: (11) 99999-9999"
+                          aria-invalid={Boolean(leadErrors.whatsapp)}
+                          aria-describedby={leadErrors.whatsapp ? "lead-whatsapp-error" : undefined}
+                        />
+                      }
+                    />
+                    <Field
+                      id="lead-email"
+                      label="E-mail"
+                      error={leadErrors.email}
+                      input={
+                        <Input
+                          id="lead-email"
+                          type="email"
+                          autoComplete="email"
+                          value={draft.lead.email}
+                          onChange={(event) => updateLead("email", event.target.value)}
+                          placeholder="Ex.: ana@email.com"
+                          aria-invalid={Boolean(leadErrors.email)}
+                          aria-describedby={leadErrors.email ? "lead-email-error" : undefined}
+                        />
+                      }
+                    />
+                  </div>
+
+                  <div className="space-y-3 border-t border-border pt-5">
+                    <label className="flex cursor-pointer items-start gap-3 text-sm text-foreground">
+                      <Checkbox
+                        checked={draft.termsAccepted}
+                        onCheckedChange={(value) => {
+                          const accepted = value === true;
+                          setDraft((current) => ({
+                            ...current,
+                            termsAccepted: accepted,
+                          }));
+                          if (accepted) {
+                            setLeadErrors((current) => ({
+                              ...current,
+                              termsAccepted: undefined,
+                            }));
+                          }
+                        }}
+                        aria-invalid={Boolean(leadErrors.termsAccepted)}
+                        aria-describedby={
+                          leadErrors.termsAccepted ? "terms-accepted-error" : undefined
+                        }
+                      />
+                      <span>Li e aceito os Termos de Uso e a Política de Privacidade.</span>
+                    </label>
+                    {leadErrors.termsAccepted && (
+                      <p id="terms-accepted-error" className="text-xs text-destructive">
+                        {leadErrors.termsAccepted}
+                      </p>
+                    )}
+
+                    <label className="flex cursor-pointer items-start gap-3 text-sm text-foreground">
+                      <Checkbox
+                        checked={draft.marketingAccepted}
+                        onCheckedChange={(value) =>
+                          setDraft((current) => ({
+                            ...current,
+                            marketingAccepted: value === true,
+                          }))
+                        }
+                      />
+                      <span>
+                        Aceito receber contato sobre análise, relatório ou conferência profissional
+                        por WhatsApp/e-mail.
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
+                <p className="mt-5 text-xs leading-relaxed text-muted-foreground">
+                  Nesta V01, os dados ficam registrados somente neste dispositivo. A integração de
+                  envio ainda não está ativa.
+                </p>
+
+                {registrationError && (
+                  <p className="mt-3 text-sm text-destructive" role="alert">
+                    {registrationError}
+                  </p>
+                )}
+
+                <div className="mt-7 flex flex-wrap justify-between gap-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setDraft((current) => ({ ...current, step: "preview" }))}
+                  >
+                    <ArrowLeft className="h-4 w-4" /> Voltar à prévia
+                  </Button>
+                  <Button type="submit" size="lg" disabled={leadSubmitting}>
+                    {leadSubmitting ? "Registrando..." : "Ver resultado completo"}
+                    {!leadSubmitting && <ArrowRight className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </form>
+            )}
+
+            {draft.step === "result" && result && (
               <div>
                 <StepHeading
                   eyebrow={`Diagnóstico de ${draft.lead.name}`}
                   title="Resultado preliminar"
                   description="Uma leitura inicial para ajudar você a decidir o que conferir primeiro."
                 />
+
+                {draft.leadRegisteredAt && (
+                  <div
+                    className="mt-5 rounded-lg border border-success/30 bg-success/10 p-4"
+                    role="status"
+                  >
+                    <p className="text-sm text-foreground">
+                      Seu interesse foi registrado neste dispositivo. A integração de envio ainda
+                      não está ativa.
+                    </p>
+                  </div>
+                )}
+                {registrationError && (
+                  <p className="mt-5 text-sm text-destructive" role="alert">
+                    {registrationError}
+                  </p>
+                )}
 
                 <div className="mt-6 flex flex-wrap items-center gap-3 border-y border-border py-4">
                   <span className="text-sm text-muted-foreground">Nível de atenção</span>
@@ -404,47 +633,90 @@ function DiagnosticoPage() {
 
                 <div className="mt-7 border-t border-border pt-7">
                   <h2 className="text-lg font-semibold text-foreground">
-                    Conferência profissional
+                    Como você pode continuar
                   </h2>
-                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                    {PROFESSIONAL_REVIEW_CTA}
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Escolha o próximo passo mais adequado para o seu caso.
                   </p>
-                  <Button
-                    type="button"
-                    size="lg"
-                    className="mt-4 w-full sm:w-auto"
-                    disabled={draft.reviewRequested}
-                    onClick={() =>
-                      setDraft((current) => ({
-                        ...current,
-                        reviewRequested: true,
-                        reviewRequestedAt: new Date().toISOString(),
-                      }))
-                    }
-                  >
-                    <ClipboardCheck className="h-4 w-4" />
-                    {draft.reviewRequested
-                      ? "Interesse registrado"
-                      : "Solicitar conferência profissional"}
-                  </Button>
-                  {draft.reviewRequested && (
-                    <p className="mt-3 text-xs leading-relaxed text-muted-foreground" role="status">
-                      Interesse salvo neste dispositivo. Nenhuma solicitação foi enviada: a
-                      integração comercial ainda não está ativa nesta V01.
+
+                  <div className="mt-5 grid gap-3">
+                    <OfferCard
+                      icon={<FileText className="h-4 w-4" />}
+                      title="Relatório completo"
+                      description="Registre seu interesse em uma leitura mais detalhada e organizada do caso."
+                      action={
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={
+                            Boolean(draft.reportRequestedAt) ||
+                            offerSubmitting === "complete_report_interest"
+                          }
+                          onClick={() => registerOfferInterest("complete_report_interest")}
+                        >
+                          {draft.reportRequestedAt
+                            ? "Interesse registrado"
+                            : offerSubmitting === "complete_report_interest"
+                              ? "Registrando..."
+                              : "Tenho interesse no relatório"}
+                        </Button>
+                      }
+                    />
+
+                    <OfferCard
+                      icon={<ClipboardCheck className="h-4 w-4" />}
+                      title="Conferência profissional"
+                      description={PROFESSIONAL_REVIEW_CTA}
+                      action={
+                        <Button
+                          type="button"
+                          disabled={
+                            draft.reviewRequested ||
+                            offerSubmitting === "professional_review_interest"
+                          }
+                          onClick={() => registerOfferInterest("professional_review_interest")}
+                        >
+                          {draft.reviewRequested
+                            ? "Interesse registrado"
+                            : offerSubmitting === "professional_review_interest"
+                              ? "Registrando..."
+                              : "Solicitar conferência"}
+                        </Button>
+                      }
+                    />
+
+                    <OfferCard
+                      icon={<ArrowRight className="h-4 w-4" />}
+                      title="Continuar na trilha completa"
+                      description="Organize as informações e acompanhe as etapas da preparação orientativa."
+                      action={
+                        <Button asChild variant="outline">
+                          <Link to="/preparacao">
+                            Abrir trilha completa <ArrowRight className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                      }
+                    />
+                  </div>
+
+                  {(draft.reportRequestedAt || draft.reviewRequested) && (
+                    <p className="mt-4 text-xs leading-relaxed text-muted-foreground" role="status">
+                      Seu interesse foi registrado neste dispositivo. A integração de envio ainda
+                      não está ativa.
+                    </p>
+                  )}
+                  {offerError && (
+                    <p className="mt-4 text-sm text-destructive" role="alert">
+                      {offerError}
                     </p>
                   )}
                 </div>
 
-                <div className="mt-7 flex flex-wrap gap-3 border-t border-border pt-5">
-                  <Button asChild variant="outline">
-                    <Link to="/preparacao">
-                      Abrir trilha completa <ArrowRight className="h-4 w-4" />
-                    </Link>
-                  </Button>
+                <div className="mt-7 border-t border-border pt-5">
                   <Button
                     type="button"
                     variant="ghost"
-                    onClick={() => setDraft((current) => ({ ...current, step: 2 }))}
+                    onClick={() => setDraft((current) => ({ ...current, step: "questions" }))}
                   >
                     Revisar respostas
                   </Button>
@@ -475,13 +747,15 @@ function DiagnosticoPage() {
                 ou validado nesta etapa.
               </p>
             </div>
-            <Link
-              to="/preparacao"
-              className="flex items-center justify-between rounded-lg border border-border bg-card p-4 text-sm font-medium text-foreground hover:border-primary/40"
-            >
-              Já quero usar a trilha completa
-              <ArrowRight className="h-4 w-4 text-primary" />
-            </Link>
+            {draft.step === "result" && (
+              <Link
+                to="/preparacao"
+                className="flex items-center justify-between rounded-lg border border-border bg-card p-4 text-sm font-medium text-foreground hover:border-primary/40"
+              >
+                Continuar na trilha completa
+                <ArrowRight className="h-4 w-4 text-primary" />
+              </Link>
+            )}
           </aside>
         </div>
       </main>
@@ -622,7 +896,30 @@ function ResultList({ items, ordered }: { items: string[]; ordered?: boolean }) 
   );
 }
 
-function validateLead(lead: LeadData): LeadErrors {
+function OfferCard({
+  icon,
+  title,
+  description,
+  action,
+}: {
+  icon: ReactNode;
+  title: string;
+  description: string;
+  action: ReactNode;
+}) {
+  return (
+    <article className="rounded-lg border border-border bg-surface p-4">
+      <div className="flex items-center gap-2 text-primary">
+        {icon}
+        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+      </div>
+      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
+      <div className="mt-4">{action}</div>
+    </article>
+  );
+}
+
+function validateLead(lead: LeadData, termsAccepted: boolean): LeadErrors {
   const errors: LeadErrors = {};
   const name = lead.name.trim();
   const whatsappDigits = Array.from(lead.whatsapp).filter((char) =>
@@ -640,6 +937,9 @@ function validateLead(lead: LeadData): LeadErrors {
   }
   if (atIndex <= 0 || dotIndex <= atIndex + 1 || dotIndex === email.length - 1) {
     errors.email = "Informe um e-mail válido. Exemplo: nome@email.com.";
+  }
+  if (!termsAccepted) {
+    errors.termsAccepted = "Aceite os Termos de Uso e a Política de Privacidade para continuar.";
   }
 
   return errors;

@@ -12,11 +12,17 @@ import {
   type ServiceType,
 } from "@/data/diagnostico";
 
-const STORAGE_KEY = "projeto-facil-diagnostico-v01";
+const STORAGE_KEY = "projeto-facil-diagnostico-v02";
+
+export type DiagnosticStep = "questions" | "preview" | "contact" | "result";
 
 export interface DiagnosticDraft {
-  step: 1 | 2 | 3;
+  step: DiagnosticStep;
   lead: LeadData;
+  termsAccepted: boolean;
+  marketingAccepted: boolean;
+  leadRegisteredAt?: string;
+  reportRequestedAt?: string;
   answers: DiagnosticAnswers;
   reviewRequested: boolean;
   reviewRequestedAt?: string;
@@ -24,12 +30,14 @@ export interface DiagnosticDraft {
 
 export function createEmptyDiagnosticDraft(): DiagnosticDraft {
   return {
-    step: 1,
+    step: "questions",
     lead: {
       name: "",
       whatsapp: "",
       email: "",
     },
+    termsAccepted: false,
+    marketingAccepted: false,
     answers: createEmptyAnswers(),
     reviewRequested: false,
   };
@@ -59,10 +67,20 @@ export function loadDiagnosticDraft(): DiagnosticDraft {
         ? parsed.answers.priorProtocol
         : empty.answers.priorProtocol,
     };
-    const hasRequiredAnswers =
-      answers.serviceType && answers.currentSituation && answers.priorProtocol;
-    const requestedStep = parsed.step === 2 || parsed.step === 3 ? parsed.step : 1;
-    const step = requestedStep === 3 && !hasRequiredAnswers ? 2 : requestedStep;
+    const hasRequiredAnswers = Boolean(
+      answers.serviceType && answers.currentSituation && answers.priorProtocol,
+    );
+    const requestedStep = isDiagnosticStep(parsed.step) ? parsed.step : "questions";
+    const hasLead =
+      typeof parsed.lead?.name === "string" &&
+      parsed.lead.name.trim().length >= 2 &&
+      typeof parsed.lead?.whatsapp === "string" &&
+      typeof parsed.lead?.email === "string";
+    const step = !hasRequiredAnswers
+      ? "questions"
+      : requestedStep === "result" && (!hasLead || parsed.termsAccepted !== true)
+        ? "contact"
+        : requestedStep;
 
     return {
       step,
@@ -71,6 +89,12 @@ export function loadDiagnosticDraft(): DiagnosticDraft {
         whatsapp: typeof parsed.lead?.whatsapp === "string" ? parsed.lead.whatsapp : "",
         email: typeof parsed.lead?.email === "string" ? parsed.lead.email : "",
       },
+      termsAccepted: parsed.termsAccepted === true,
+      marketingAccepted: parsed.marketingAccepted === true,
+      leadRegisteredAt:
+        typeof parsed.leadRegisteredAt === "string" ? parsed.leadRegisteredAt : undefined,
+      reportRequestedAt:
+        typeof parsed.reportRequestedAt === "string" ? parsed.reportRequestedAt : undefined,
       answers,
       reviewRequested: parsed.reviewRequested === true,
       reviewRequestedAt:
@@ -120,4 +144,8 @@ function isPriorProtocol(value: unknown): value is PriorProtocol {
 
 function isDocumentId(value: unknown): value is DocumentId {
   return typeof value === "string" && documentIds.has(value as DocumentId);
+}
+
+function isDiagnosticStep(value: unknown): value is DiagnosticStep {
+  return value === "questions" || value === "preview" || value === "contact" || value === "result";
 }

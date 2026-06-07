@@ -54,7 +54,7 @@ export const SITUATION_OPTIONS: { value: CurrentSituation; label: string }[] = [
 ];
 
 export const DOCUMENT_OPTIONS: { value: DocumentId; label: string }[] = [
-  { value: "matricula", label: "Matrícula ou documento do imóvel" },
+  { value: "matricula", label: "Algum documento do imóvel" },
   { value: "documentos_proprietario", label: "Documentos do proprietário" },
   { value: "projeto_arquitetonico", label: "Projeto arquitetônico" },
   { value: "art_rrt", label: "ART ou RRT" },
