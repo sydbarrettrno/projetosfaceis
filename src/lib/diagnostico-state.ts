@@ -11,6 +11,7 @@ import {
   type PriorProtocol,
   type ServiceType,
 } from "@/data/diagnostico";
+import { normalizeWhatsApp } from "@/lib/whatsapp";
 
 const STORAGE_KEY = "projeto-facil-diagnostico-v02";
 
@@ -86,7 +87,8 @@ export function loadDiagnosticDraft(): DiagnosticDraft {
       step,
       lead: {
         name: typeof parsed.lead?.name === "string" ? parsed.lead.name : "",
-        whatsapp: typeof parsed.lead?.whatsapp === "string" ? parsed.lead.whatsapp : "",
+        whatsapp:
+          typeof parsed.lead?.whatsapp === "string" ? normalizeWhatsApp(parsed.lead.whatsapp) : "",
         email: typeof parsed.lead?.email === "string" ? parsed.lead.email : "",
       },
       termsAccepted: parsed.termsAccepted === true,

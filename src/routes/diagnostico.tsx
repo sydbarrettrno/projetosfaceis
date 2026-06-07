@@ -1,5 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type KeyboardEvent,
+  type RefObject,
+  type ReactNode,
+} from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -41,6 +50,7 @@ import {
   type DiagnosticStep,
 } from "@/lib/diagnostico-state";
 import { cn } from "@/lib/utils";
+import { formatWhatsApp, normalizeWhatsApp } from "@/lib/whatsapp";
 
 export const Route = createFileRoute("/diagnostico")({
   head: () => ({
@@ -76,6 +86,9 @@ function DiagnosticoPage() {
   const [registrationError, setRegistrationError] = useState("");
   const [offerSubmitting, setOfferSubmitting] = useState<DiagnosticLeadEventType | null>(null);
   const [offerError, setOfferError] = useState("");
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const whatsappInputRef = useRef<HTMLInputElement>(null);
+  const emailInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setDraft(loadDiagnosticDraft());
@@ -126,8 +139,7 @@ function DiagnosticoPage() {
     scrollToTop();
   };
 
-  const submitLead = async (event: FormEvent) => {
-    event.preventDefault();
+  const submitLead = async () => {
     const errors = validateLead(draft.lead, draft.termsAccepted);
     setLeadErrors(errors);
     setRegistrationError("");
@@ -135,7 +147,7 @@ function DiagnosticoPage() {
 
     const normalizedLead = {
       name: draft.lead.name.trim(),
-      whatsapp: draft.lead.whatsapp.trim(),
+      whatsapp: normalizeWhatsApp(draft.lead.whatsapp),
       email: draft.lead.email.trim(),
     };
 
@@ -175,6 +187,23 @@ function DiagnosticoPage() {
     } finally {
       setLeadSubmitting(false);
     }
+  };
+
+  const focusNextLeadField = (
+    event: KeyboardEvent<HTMLInputElement>,
+    nextField: RefObject<HTMLInputElement | null>,
+  ) => {
+    if (event.key !== "Enter") return;
+
+    event.preventDefault();
+    nextField.current?.focus();
+  };
+
+  const finishLeadField = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== "Enter") return;
+
+    event.preventDefault();
+    event.currentTarget.blur();
   };
 
   const registerOfferInterest = async (
@@ -446,7 +475,12 @@ function DiagnosticoPage() {
             )}
 
             {draft.step === "contact" && result && (
-              <form onSubmit={submitLead} noValidate>
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault();
+                }}
+                noValidate
+              >
                 <StepHeading
                   eyebrow="Cadastro mínimo"
                   title="Como podemos identificar seu diagnóstico?"
@@ -460,10 +494,13 @@ function DiagnosticoPage() {
                     error={leadErrors.name}
                     input={
                       <Input
+                        ref={nameInputRef}
                         id="lead-name"
                         autoComplete="name"
+                        enterKeyHint="next"
                         value={draft.lead.name}
                         onChange={(event) => updateLead("name", event.target.value)}
+                        onKeyDown={(event) => focusNextLeadField(event, whatsappInputRef)}
                         placeholder="Ex.: Ana Souza"
                         aria-invalid={Boolean(leadErrors.name)}
                         aria-describedby={leadErrors.name ? "lead-name-error" : undefined}
@@ -477,13 +514,19 @@ function DiagnosticoPage() {
                       error={leadErrors.whatsapp}
                       input={
                         <Input
+                          ref={whatsappInputRef}
                           id="lead-whatsapp"
                           type="tel"
-                          inputMode="tel"
+                          inputMode="numeric"
                           autoComplete="tel"
-                          value={draft.lead.whatsapp}
-                          onChange={(event) => updateLead("whatsapp", event.target.value)}
-                          placeholder="Ex.: (11) 99999-9999"
+                          enterKeyHint="next"
+                          value={formatWhatsApp(draft.lead.whatsapp)}
+                          onChange={(event) =>
+                            updateLead("whatsapp", normalizeWhatsApp(event.target.value))
+                          }
+                          onKeyDown={(event) => focusNextLeadField(event, emailInputRef)}
+                          placeholder="Ex.: (47) 99730-1910"
+                          maxLength={15}
                           aria-invalid={Boolean(leadErrors.whatsapp)}
                           aria-describedby={leadErrors.whatsapp ? "lead-whatsapp-error" : undefined}
                         />
@@ -495,11 +538,14 @@ function DiagnosticoPage() {
                       error={leadErrors.email}
                       input={
                         <Input
+                          ref={emailInputRef}
                           id="lead-email"
                           type="email"
                           autoComplete="email"
+                          enterKeyHint="done"
                           value={draft.lead.email}
                           onChange={(event) => updateLead("email", event.target.value)}
+                          onKeyDown={finishLeadField}
                           placeholder="Ex.: ana@email.com"
                           aria-invalid={Boolean(leadErrors.email)}
                           aria-describedby={leadErrors.email ? "lead-email-error" : undefined}
@@ -575,7 +621,12 @@ function DiagnosticoPage() {
                   >
                     <ArrowLeft className="h-4 w-4" /> Voltar à prévia
                   </Button>
-                  <Button type="submit" size="lg" disabled={leadSubmitting}>
+                  <Button
+                    type="button"
+                    size="lg"
+                    disabled={leadSubmitting}
+                    onClick={() => void submitLead()}
+                  >
                     {leadSubmitting ? "Registrando..." : "Ver resultado completo"}
                     {!leadSubmitting && <ArrowRight className="h-4 w-4" />}
                   </Button>
@@ -922,9 +973,7 @@ function OfferCard({
 function validateLead(lead: LeadData, termsAccepted: boolean): LeadErrors {
   const errors: LeadErrors = {};
   const name = lead.name.trim();
-  const whatsappDigits = Array.from(lead.whatsapp).filter((char) =>
-    "0123456789".includes(char),
-  ).length;
+  const whatsappDigits = normalizeWhatsApp(lead.whatsapp).length;
   const email = lead.email.trim();
   const atIndex = email.indexOf("@");
   const dotIndex = email.lastIndexOf(".");
@@ -932,8 +981,8 @@ function validateLead(lead: LeadData, termsAccepted: boolean): LeadErrors {
   if (name.length < 2) {
     errors.name = "Informe seu nome para identificar o diagnóstico.";
   }
-  if (whatsappDigits < 10) {
-    errors.whatsapp = "Informe um WhatsApp com DDD.";
+  if (whatsappDigits !== 11) {
+    errors.whatsapp = "Informe um WhatsApp com DDD e número completo.";
   }
   if (atIndex <= 0 || dotIndex <= atIndex + 1 || dotIndex === email.length - 1) {
     errors.email = "Informe um e-mail válido. Exemplo: nome@email.com.";
