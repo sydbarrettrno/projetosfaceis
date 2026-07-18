@@ -142,7 +142,7 @@ const PreparacaoRouteChildren: PreparacaoRouteChildren = {
   PreparacaoResultadoRoute: PreparacaoResultadoRoute,
 }
 
-const PreparacaoRouteWithChildren: typeof PreparacaoRoute._addFileChildren(
+const PreparacaoRouteWithChildren = PreparacaoRoute._addFileChildren(
   PreparacaoRouteChildren,
 )
 
