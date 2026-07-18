@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PreparacaoRouteImport } from './routes/preparacao'
+import { Route as PilotoRouteImport } from './routes/piloto'
 import { Route as DiagnosticoRouteImport } from './routes/diagnostico'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PreparacaoResultadoRouteImport } from './routes/preparacao.resultado'
@@ -17,6 +18,11 @@ import { Route as PreparacaoResultadoRouteImport } from './routes/preparacao.res
 const PreparacaoRoute = PreparacaoRouteImport.update({
   id: '/preparacao',
   path: '/preparacao',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PilotoRoute = PilotoRouteImport.update({
+  id: '/piloto',
+  path: '/piloto',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DiagnosticoRoute = DiagnosticoRouteImport.update({
@@ -38,12 +44,14 @@ const PreparacaoResultadoRoute = PreparacaoResultadoRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/diagnostico': typeof DiagnosticoRoute
+  '/piloto': typeof PilotoRoute
   '/preparacao': typeof PreparacaoRouteWithChildren
   '/preparacao/resultado': typeof PreparacaoResultadoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/diagnostico': typeof DiagnosticoRoute
+  '/piloto': typeof PilotoRoute
   '/preparacao': typeof PreparacaoRouteWithChildren
   '/preparacao/resultado': typeof PreparacaoResultadoRoute
 }
@@ -51,18 +59,30 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/diagnostico': typeof DiagnosticoRoute
+  '/piloto': typeof PilotoRoute
   '/preparacao': typeof PreparacaoRouteWithChildren
   '/preparacao/resultado': typeof PreparacaoResultadoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/diagnostico' | '/preparacao' | '/preparacao/resultado'
+  fullPaths:
+    | '/'
+    | '/diagnostico'
+    | '/piloto'
+    | '/preparacao'
+    | '/preparacao/resultado'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/diagnostico' | '/preparacao' | '/preparacao/resultado'
+  to:
+    | '/'
+    | '/diagnostico'
+    | '/piloto'
+    | '/preparacao'
+    | '/preparacao/resultado'
   id:
     | '__root__'
     | '/'
     | '/diagnostico'
+    | '/piloto'
     | '/preparacao'
     | '/preparacao/resultado'
   fileRoutesById: FileRoutesById
@@ -70,6 +90,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DiagnosticoRoute: typeof DiagnosticoRoute
+  PilotoRoute: typeof PilotoRoute
   PreparacaoRoute: typeof PreparacaoRouteWithChildren
 }
 
@@ -80,6 +101,13 @@ declare module '@tanstack/react-router' {
       path: '/preparacao'
       fullPath: '/preparacao'
       preLoaderRoute: typeof PreparacaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/piloto': {
+      id: '/piloto'
+      path: '/piloto'
+      fullPath: '/piloto'
+      preLoaderRoute: typeof PilotoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/diagnostico': {
@@ -114,13 +142,14 @@ const PreparacaoRouteChildren: PreparacaoRouteChildren = {
   PreparacaoResultadoRoute: PreparacaoResultadoRoute,
 }
 
-const PreparacaoRouteWithChildren = PreparacaoRoute._addFileChildren(
+const PreparacaoRouteWithChildren: typeof PreparacaoRoute._addFileChildren(
   PreparacaoRouteChildren,
 )
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DiagnosticoRoute: DiagnosticoRoute,
+  PilotoRoute: PilotoRoute,
   PreparacaoRoute: PreparacaoRouteWithChildren,
 }
 export const routeTree = rootRouteImport
