@@ -16,9 +16,17 @@ export function SiteHeader() {
             </span>
           </span>
         </Link>
-        <span className="hidden text-xs text-muted-foreground sm:inline">
-          Casa Residencial Unifamiliar
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="hidden text-xs text-muted-foreground sm:inline">
+            Casa Residencial Unifamiliar
+          </span>
+          <Link
+            to="/piloto"
+            className="rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground transition hover:border-primary/40 hover:bg-accent"
+          >
+            Piloto
+          </Link>
+        </div>
       </div>
     </header>
   );
