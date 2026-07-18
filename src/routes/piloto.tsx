@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { ArrowLeft, RotateCcw } from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Button } from "@/components/ui/button";
@@ -253,7 +253,7 @@ function ReviewButton({
 }: {
   active: boolean;
   tone?: "default" | "error" | "muted";
-  children: React.ReactNode;
+  children: ReactNode;
   onClick: () => void;
 }) {
   const activeClass = {
